@@ -1,0 +1,8 @@
+name = Permalink Filter
+description = A content filter that adds permalinks to heading tags.
+backdrop = 1.x
+type = module
+package = Input filters
+tags[] = Content
+tags[] = Filters
+

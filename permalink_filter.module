@@ -1,0 +1,181 @@
+<?php
+/**
+ * @file
+ * A content filter that adds permalinks to heading tags.
+ */
+
+/**
+ * Implements hook_filter_info().
+ */
+function permalink_filter_filter_info() {
+  return array(
+    'permalink_filter' => array(
+      'title' => t('Add permalinks to heading tags'),
+      'settings callback' => 'permalink_filter_settings',
+      'default settings' => array(
+        'tags' => backdrop_map_assoc(array('h1', 'h2', 'h3', 'h4', 'h5', 'h6')),
+        'text' => '#',
+        'position' => 'before',
+        'css' => TRUE,
+      ),
+      'process callback' => 'permalink_filter_process',
+      'weight' => 8,
+
+      'cache' => FALSE, // TODO: Remove.
+    ),
+  );
+}
+
+/**
+ * Callback function for the filter settings form.
+ */
+function permalink_filter_settings($form, &$form_state, $filter, $format) {
+  $elements = array();
+  $settings = $filter->settings;
+
+  $elements['tags'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Tags'),
+    '#description' => t('Which tags to add permalinks to.'),
+    '#options' => array(
+      'h1' => 'H1',
+      'h2' => 'H2',
+      'h3' => 'H3',
+      'h4' => 'H4',
+      'h5' => 'H5',
+      'h6' => 'H6',
+    ),
+    '#default_value' => $settings['tags'],
+  );
+  $elements['text'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Text'),
+    '#description' => t('The text to use for the permalinks. Popular examples include: #, ¶, §.'),
+    '#default_value' => $settings['text'],
+    '#size' => 20,
+  );
+  $elements['position'] = array(
+    '#type' => 'radios',
+    '#title' => t('Position'),
+    '#description' => t('Where to place the permalinks relative to the heading tags.'),
+    '#options' => array(
+      'before' => t('Before'),
+      'after' => t('After'),
+    ),
+    '#default_value' => $settings['position'],
+  );
+  $elements['css'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Include default styling'),
+    '#description' => t('Add default CSS to style permalinks (e.g. display on hover).'),
+    '#default_value' => $settings['css'],
+  );
+
+  return $elements;
+}
+
+/**
+ * Callback function to process the filter.
+ */
+function permalink_filter_process($text, $filter, $format, $langcode, $cache, $cache_id) {
+  $settings = $filter->settings;
+
+  // Get list of tags to use in pattern.
+  $tags = '[';
+  foreach (array_filter($settings['tags']) as $tag) {
+    $tags .= substr($tag, 1);
+  }
+  $tags .= ']';
+
+  // An anonymous function for performing the actual replacement.
+  $callback = function($match) use($settings) {
+    // Get match components.
+    $text = $match[0];
+    $tag = $match[1];
+    $attributes = $match[2];
+    $id = $match[3];
+    $value = $match[4];
+
+    // If an ID doesn't already exist, generate one and add it to the tag.
+    if (empty($id)) {
+      $id = backdrop_html_id(strip_tags($value));
+      $attributes .= ' id="' . $id . '"';
+    }
+
+    // Add the permalink to the tag.
+    $permalink = theme('permalink', array(
+      'id' => $id,
+      'text' => $settings['text'],
+      'position' => $settings['position'],
+      'css' => $settings['css'],
+    ));
+    if ($settings['position'] == 'before') {
+      $value = $permalink . $value;
+    }
+    else {
+      $value = $value . $permalink;
+    }
+
+    // Re-create the full tag.
+    return "<$tag $attributes>$value</$tag>";
+  };
+
+  // Add permalinks to heading tags.
+  $pattern = '/<(h' . $tags . ')\s*([^>]*?(?:id=["\']([^"\'>]*)["\'])?[^>]*)>(.*?)<\/h' . $tags . '>/is';
+  $text = preg_replace_callback($pattern, $callback, $text);
+
+  return $text;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function permalink_filter_theme($existing, $type, $theme, $path) {
+  return array(
+    'permalink' => array(
+      'variables' => array(
+        'id' => '',
+        'text' => '#',
+        'position' => 'before',
+        'css' => TRUE,
+      ),
+    ),
+  );
+}
+
+/**
+ * Returns HTML for a permalink.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - id: The fragment identifier of the link/tag.
+ *   - text: The textual part of the link.
+ *   - position: Where the permalink sits, relative to the tag ('before' or
+ *     'after').
+ *   - css: TRUE if default styling is to be applied to the link, FALSE
+ *     otherwise.
+ *
+ * @return string
+ *   An HTML string of the permalink.
+ *
+ * @ingroup themeable
+ */
+function theme_permalink($variables) {
+  // Add CSS if necessary.
+  if ($variables['css']) {
+    backdrop_add_css(backdrop_get_path('module', 'permalink_filter') . '/css/permalink_filter.css');
+  }
+
+  // Return the permalink.
+  return l($variables['text'], '', array(
+    'attributes' => array(
+      'class' => array(
+        'permalink-filter',
+        'permalink-filter-' . $variables['position'],
+      ),
+    ),
+    'fragment' => $variables['id'],
+    'external' => TRUE,
+  ));
+}
+
