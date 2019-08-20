@@ -31,11 +31,9 @@ function permalink_filter_filter_info() {
  * Callback function to process the Permalink filter.
  */
 function permalink_filter_process($text, $filter, $format, $langcode, $cache, $cache_id) {
-  $settings = config_get('permalink_filter.settings');
-
   // Get list of tags to use in pattern.
   $tags = '[';
-  foreach (array_filter($settings['tags']) as $tag) {
+  foreach (array_filter(config_get('permalink_filter.settings', 'tags')) as $tag) {
     $tags .= substr($tag, 1);
   }
   $tags .= ']';
@@ -69,8 +67,9 @@ function permalink_filter_preg_callback($match) {
   // Add the permalink to the tag.
   $permalink = theme('permalink', array(
     'id' => $id,
-    'text' => $settings['text'],
+    'text' => check_plain($settings['text']),
     'position' => $settings['position'],
+    'value' => check_plain(strip_tags($value)),
     'css' => $settings['css'],
   ));
   if ($settings['position'] == 'before') {
@@ -94,6 +93,7 @@ function permalink_filter_theme($existing, $type, $theme, $path) {
         'id' => '',
         'text' => '#',
         'position' => 'before',
+        'value' => '',
         'css' => TRUE,
       ),
     ),
@@ -109,6 +109,7 @@ function permalink_filter_theme($existing, $type, $theme, $path) {
  *   - text: The textual part of the link.
  *   - position: Where the permalink sits, relative to the tag ('before' or
  *     'after').
+ *   - value: The heading text (stripped of any extra tags).
  *   - css: TRUE if default styling is to be applied to the link, FALSE
  *     otherwise.
  *
@@ -125,6 +126,7 @@ function theme_permalink($variables) {
         'permalink-filter',
         'permalink-filter-' . $variables['position'],
       ),
+      'title' => 'Permalink to ' . $variables['value'],
     ),
     'fragment' => $variables['id'],
     'external' => TRUE,
@@ -137,7 +139,7 @@ function theme_permalink($variables) {
 function permalink_filter_menu() {
   return array(
     'admin/config/content/permalink-filter' => array(
-      'title' => 'Permalink Filter',
+      'title' => 'Permalink filter',
       'description' => 'Configure where/how permalinks are added to heading tags.',
       'page callback' => 'backdrop_get_form',
       'page arguments' => array('permalink_filter_settings_form'),
@@ -152,11 +154,13 @@ function permalink_filter_menu() {
 function permalink_filter_settings_form($form, $form_state) {
   $settings = config_get('permalink_filter.settings');
   $form['#config'] = 'permalink_filter.settings';
+  $form['#attached']['css'] = array(
+    backdrop_get_path('module', 'permalink_filter') . '/css/permalink_filter.admin.css',
+  );
 
   $form['tags'] = array(
     '#type' => 'checkboxes',
-    '#title' => t('Tags'),
-    '#description' => t('Which tags to add permalinks to.'),
+    '#title' => t('Tags to add permalinks to'),
     '#options' => array(
       'h1' => 'H1',
       'h2' => 'H2',
@@ -169,18 +173,17 @@ function permalink_filter_settings_form($form, $form_state) {
   );
   $form['text'] = array(
     '#type' => 'textfield',
-    '#title' => t('Text'),
-    '#description' => t('The text to use for the permalinks. Popular examples include: #, ¶, §.'),
+    '#title' => t('Permalink text'),
+    '#description' => t('Popular examples include: #, ¶, §.'),
     '#default_value' => $settings['text'],
     '#size' => 20,
   );
   $form['position'] = array(
     '#type' => 'radios',
-    '#title' => t('Position'),
-    '#description' => t('Where to place the permalinks relative to the heading tags.'),
+    '#title' => t('Permalink position'),
     '#options' => array(
-      'before' => t('Before'),
-      'after' => t('After'),
+      'before' => t('Before the tag'),
+      'after' => t('After the tag'),
     ),
     '#default_value' => $settings['position'],
   );

@@ -1,0 +1,10 @@
+/**
+ * @file
+ * Custom styling for the Permalink Filter admin form.
+ */
+
+#permalink-filter-settings-form .form-item-tags .form-type-checkbox {
+  display: inline-block;
+  padding-right: 1em;
+}
+
