@@ -29,9 +29,10 @@ Installation
 
 - Tick the 'Add permalinks to heading tags' box to enable the filter, and make
   sure it appears towards the end of the filter processing order (the exact
-  position will depend on what other filters are enabled).
+  position will depend on what other filters are enabled). Save.
 
-- Under 'Filter settings', expand the 'Add permalinks to heading tags' tab and
+- Visit the configuration page under Administration > Configuration > Content
+  authoring > Permalink filter (admin/config/content/permalink-filter) and
   adjust the settings as appropriate for your site.
 
 - (Optional) Style the permalinks with your own custom CSS.
