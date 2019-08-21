@@ -10,7 +10,9 @@
 function permalink_filter_init() {
   // Add CSS if necessary.
   if (config_get('permalink_filter.settings', 'css')) {
-    backdrop_add_css(backdrop_get_path('module', 'permalink_filter') . '/css/permalink_filter.css');
+    backdrop_add_css(backdrop_get_path('module', 'permalink_filter') . '/css/permalink_filter.css', array(
+      'every_page' => TRUE,
+    ));
   }
 }
 
