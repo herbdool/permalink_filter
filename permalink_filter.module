@@ -196,7 +196,16 @@ function permalink_filter_settings_form($form, $form_state) {
     '#default_value' => $settings['css'],
   );
 
+  $form['#submit'][] = 'permalink_filter_settings_form_submit';
   return system_settings_form($form);
+}
+
+/**
+ * Custom submit handler for permalink_filter_settings_form().
+ */
+function permalink_filter_settings_form_submit($form, &$form_state) {
+  // Clear field cache to make changes apply straight away.
+  cache_flush('field');
 }
 
 /**
