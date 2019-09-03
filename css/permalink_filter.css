@@ -6,17 +6,22 @@
 a.permalink-filter {
   opacity: 0;
 }
-a.permalink-filter-before {
-  float: left;
-  margin-left: -1em;
-}
-
 h1:hover a.permalink-filter,
 h2:hover a.permalink-filter,
 h3:hover a.permalink-filter,
 h4:hover a.permalink-filter,
 h5:hover a.permalink-filter,
-h6:hover a.permalink-filter {
+h6:hover a.permalink-filter,
+a.permalink-filter:focus {
   opacity: 1;
+}
+
+a.permalink-filter-before {
+  float: left; /* LTR */
+  margin-left: -1em; /* LTR */
+}
+[dir="rtl"] a.permalink-filter-before {
+  float: right;
+  margin-right: -1em;
 }
 
