@@ -33,56 +33,46 @@ function permalink_filter_filter_info() {
  * Callback function to process the Permalink filter.
  */
 function permalink_filter_process($text, $filter, $format, $langcode, $cache, $cache_id) {
-  // Get list of tags to use in pattern.
-  $tags = '[';
-  foreach (array_filter(config_get('permalink_filter.settings', 'tags')) as $tag) {
-    $tags .= substr($tag, 1);
-  }
-  $tags .= ']';
-
-  // Add permalinks to heading tags.
-  $pattern = '/<(h' . $tags . ')\s*([^>]*?(?:id=["\']([^"\'>]*)["\'])?[^>]*)>(.*?)<\/h' . $tags . '>/is';
-  $text = preg_replace_callback($pattern, 'permalink_filter_preg_callback', $text);
-
-  return $text;
-}
-
-/**
- * Callback function to perform replacements for preg_replace_callback().
- */
-function permalink_filter_preg_callback($match) {
   $settings = config_get('permalink_filter.settings');
 
-  // Get match components.
-  $text = $match[0];
-  $tag = $match[1];
-  $attributes = $match[2];
-  $id = $match[3];
-  $value = $match[4];
+  // Load the text into the parser.
+  $dom = filter_dom_load($text);
 
-  // If an ID doesn't already exist, generate one and add it to the tag.
-  if (empty($id)) {
-    $id = backdrop_html_id(strip_tags($value));
-    $attributes .= ' id="' . $id . '"';
+  // Find all matching tags in the text.
+  foreach (array_filter($settings['tags']) as $tag) {
+    $elements = $dom->getElementsByTagName($tag);
+    foreach ($elements as $element) {
+      $id = $element->getAttribute('id');
+      $value = $element->nodeValue;
+
+      // If an ID doesn't already exist, generate one and add it to the tag.
+      if (empty($id)) {
+        $id = backdrop_html_id($value);
+        $element->setAttribute('id', $id);
+      }
+
+      // Create the permalink.
+      $permalink = theme('permalink', array(
+        'id' => $id,
+        'text' => check_plain($settings['text']),
+        'position' => $settings['position'],
+        'value' => check_plain($value),
+        'css' => $settings['css'],
+      ));
+
+      // Add the permalink to the tag.
+      $fragment = $dom->createDocumentFragment();
+      $fragment->appendXML($permalink);
+      if ($settings['position'] == 'before') {
+        $element->insertBefore($fragment, $element->firstChild);
+      }
+      else {
+        $element->appendChild($fragment);
+      }
+    }
   }
 
-  // Add the permalink to the tag.
-  $permalink = theme('permalink', array(
-    'id' => $id,
-    'text' => check_plain($settings['text']),
-    'position' => $settings['position'],
-    'value' => check_plain(strip_tags($value)),
-    'css' => $settings['css'],
-  ));
-  if ($settings['position'] == 'before') {
-    $value = $permalink . $value;
-  }
-  else {
-    $value = $value . $permalink;
-  }
-
-  // Re-create the full tag.
-  return "<$tag $attributes>$value</$tag>";
+  return filter_dom_serialize($dom);
 }
 
 /**
