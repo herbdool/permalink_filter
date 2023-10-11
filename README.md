@@ -46,7 +46,7 @@ https://github.com/backdrop-contrib/permalink_filter/issues.
 Current Maintainers
 -------------------
 
-- Peter Anderson (https://github.com/BWPanda).
+- Seeking maintainer(s)
 
 Credits
 -------
