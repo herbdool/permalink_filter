@@ -43,7 +43,7 @@ function permalink_filter_process($text, $filter, $format, $langcode, $cache, $c
     $elements = $dom->getElementsByTagName($tag);
     foreach ($elements as $element) {
       $id = $element->getAttribute('id');
-      $value = $element->nodeValue;
+      $value = trim($element->nodeValue);
 
       // If an ID doesn't already exist, generate one and add it to the tag.
       if (empty($id)) {
